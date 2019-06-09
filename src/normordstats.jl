@@ -2,7 +2,7 @@ module OrderStatistics
 
 using Statistics, StatsFuns, Nemo
 
-export NormOrderStatistic, moment, expectation, expectationproduct
+export NormOrderStatistic, moment, expectation
 
 ###############################################################################
 #
@@ -118,9 +118,9 @@ Base.getindex(OS::NormOrderStatistic{T}, i::Int) where T = OS.E[i]
 #
 ###############################################################################
 
-StatsFuns.normcdf(x) = (F = parent(x); Nemo.erfc(-x/sqrt(F(2)))/2)
-StatsFuns.normccdf(x) = 1 - normcdf(x)
-StatsFuns.normpdf(x) = (F = parent(x); 1/sqrt(2F(π))*exp(-x^2/2))
+StatsFuns.normcdf(x::acb) = (F = parent(x); Nemo.erfc(-x/sqrt(F(2)))/2)
+StatsFuns.normccdf(x::acb) = 1 - normcdf(x)
+StatsFuns.normpdf(x::acb) = (F = parent(x); 1/sqrt(2const_pi(F))*exp(-x^2/2))
 
 # I(x, i, j) = exp((i-1)*normlogcdf(x) + j*normlogccdf(x) + normlogpdf(x))
 I(x, i, j) = normcdf(x)^i * normccdf(x)^j * normpdf(x)
@@ -255,11 +255,11 @@ end
 ###############################################################################
 
 function Statistics.var(OS::NormOrderStatistic, i::Int)
-    return expectationproduct(OS,i,i) - expectation(OS,i)^2
+    return expectation(OS,i,i) - expectation(OS,i)^2
 end
 
 function Statistics.cov(OS::NormOrderStatistic, i::Int, j::Int)
-    return expectationproduct(OS,i,j) - expectation(OS,i)*expectation(OS,j)
+    return expectation(OS,i,j) - expectation(OS,i)*expectation(OS,j)
 end
 
 function Statistics.cov(OS::NormOrderStatistic)
