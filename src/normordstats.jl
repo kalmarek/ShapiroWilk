@@ -10,7 +10,7 @@ export NormOrderStatistic, moment, expectation
 #
 ###############################################################################
 
-const _cache = Dict{Symbol, Dict{Type, Dict{Any, acb}}}()
+const _cache = Dict{Symbol, Dict}()
 
 function dropcache()
     for k in keys(OrderStatistics._cache)
@@ -20,9 +20,8 @@ end
 
 function getval!(f, returnT::Type, args...)
     sf = Symbol(f)
-
     if !(haskey(_cache, sf))
-        _cache[sf] = Dict{Type, Dict}()
+        _cache[sf] = Dict{Type, Dict{typeof(args), returnT}}()
     end
 
     if !(haskey(_cache[sf], returnT))
@@ -31,12 +30,12 @@ function getval!(f, returnT::Type, args...)
 
     if !(haskey(_cache[sf][returnT], args))
         _cache[sf][returnT][args] = f(args...)
-        if sf in (:α, :β, :ψ)
-            F, i, j, r = args
+        F, i, j, r = args
+        if f in (α, β, ψ) && i != j
             newargs = (F, j, i, r)
-            if sf == :α
+            if f == α
                 _cache[sf][returnT][newargs] = -_cache[sf][returnT][args]
-            elseif sf == :β || sf == :ψ
+            elseif f == β || f == ψ
                 _cache[sf][returnT][newargs] = _cache[sf][returnT][args]
             end
         end
