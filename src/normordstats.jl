@@ -189,12 +189,16 @@ function ψ(F, i::Int, j::Int, r)
     return res
 end
 
+α_cached(args...) = getval!(α, acb, args...)
+β_cached(args...) = getval!(β, acb, args...)
+ψ_cached(args...) = getval!(ψ, acb, args...)
+
 function γ(F, i::Int, j::Int, r=RADIUS.R)
     res = zero(F)
 
-    res = Nemo.addeq!(res, getval!(α, acb, (F,i,j,r)...))
-    res = Nemo.addeq!(res, i*getval!(β, acb, (F,i-1,j,r)...))
-    res = Nemo.sub!(res, res, getval!(ψ, acb, (F,i,j,r)...))
+    res = Nemo.addeq!(res, α_cached(F,i,j,r))
+    res = Nemo.addeq!(res, i*β_cached(F,i-1,j,r))
+    res = Nemo.sub!(res, res, ψ_cached(F,i,j,r))
     res = res /(i*j)
 
     return F(abs(res))
