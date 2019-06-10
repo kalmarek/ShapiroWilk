@@ -124,7 +124,7 @@ StatsFuns.normpdf(x::acb) = (F = parent(x); 1/sqrt(2const_pi(F))*exp(-x^2/2))
 # I(x, i, j) = exp((i-1)*normlogcdf(x) + j*normlogccdf(x) + normlogpdf(x))
 I(x, i, j) = normcdf(x)^i * normccdf(x)^j * normpdf(x)
 
-function moment(OS::NormOrderStatistic, i::Int; pow=1, r=R)
+function moment(OS::NormOrderStatistic, i::Int; pow=1, r=RADIUS.R)
     n = OS.n
     @assert 1<= i <= n
     C = OS.facs[n]/OS.facs[i-1]/OS.facs[n-i]
@@ -159,7 +159,15 @@ end
 #
 ###############################################################################
 
-const R = 12 # Note: normcdf(-12.2) < 1.5e-34
+mutable struct _IntegrationRadius
+    R::Float64
+end
+
+const RADIUS = _IntegrationRadius(12.2) # Note: normcdf(-12.2) < 1.5e-34
+
+Base.show(io::IO, ir::_IntegrationRadius) = print(io, "Radius of integration is set to $(ir.R).")
+
+setradius!(r) = (RADIUS.R = Float64(r); RADIUS)
 
 function α(F, i::Int, j::Int, r)
     res = Nemo.integrate(F, x -> x * normcdf(x)^i * normccdf(x)^j, -r, r)
@@ -181,7 +189,7 @@ function ψ(F, i::Int, j::Int, r)
     return res
 end
 
-function γ(F, i::Int, j::Int, r=R)
+function γ(F, i::Int, j::Int, r=RADIUS.R)
     res = zero(F)
 
     res = Nemo.addeq!(res, getval!(α, acb, (F,i,j,r)...))
