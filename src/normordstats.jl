@@ -30,15 +30,6 @@ function getval!(f, returnT::Type, args...)
 
     if !(haskey(_cache[sf][returnT], args))
         _cache[sf][returnT][args] = f(args...)
-        F, i, j, r = args
-        if f in (α, β, ψ) && i != j
-            newargs = (F, j, i, r)
-            if f == α
-                _cache[sf][returnT][newargs] = -_cache[sf][returnT][args]
-            elseif f == β || f == ψ
-                _cache[sf][returnT][newargs] = _cache[sf][returnT][args]
-            end
-        end
     end
 
     return _cache[sf][returnT][args]::returnT
@@ -169,37 +160,52 @@ Base.show(io::IO, ir::_IntegrationRadius) = print(io, "Radius of integration is 
 
 setradius!(r) = (RADIUS.R = Float64(r); RADIUS)
 
-function α(F, i::Int, j::Int, r)
-    res = Nemo.integrate(F, x -> x * normcdf(x)^i * normccdf(x)^j, -r, r)
+function α_int(i::Int, j::Int, r::acb)
+    res = Nemo.integrate(parent(r), x -> x * normcdf(x)^i * normccdf(x)^j, -r, r)
     return res
 end
 
-function β(F, i::Int, j::Int, r)
-    res = Nemo.integrate(F, x -> x^2 * I(x, i, j), -r, r)
+function β_int(i::Int, j::Int, r::acb)
+    res = Nemo.integrate(parent(r), x -> x^2 * I(x, i, j), -r, r)
     return res
 end
 
-function integrand(F, x::Nemo.acb, j::Int, r)
-    return Nemo.integrate(F, y -> normcdf(y)^j, -r, -x)
+function integrand(j::Int, x::Nemo.acb, r::acb)
+    return Nemo.integrate(parent(r), y -> normcdf(y)^j, -r, -x)
 end
 
-function ψ(F, i::Int, j::Int, r)
+function ψ_int(i::Int, j::Int, r::acb)
     @info "ψ" i j
-    @time res = Nemo.integrate(F, x -> normcdf(x)^i * integrand(F, x, j, r), -r, r)
+    @time res = Nemo.integrate(parent(r),
+        x -> normcdf(x)^i * integrand(j, x, r), -r, r)
     return res
 end
 
-α_cached(args...) = getval!(α, acb, args...)
-β_cached(args...) = getval!(β, acb, args...)
-ψ_cached(args...) = getval!(ψ, acb, args...)
+function α(F::AcbField, i::Int, j::Int, r)
+    j > i && return -α(F, j, i, r)
+    return getval!(α_int, elem_type(F), i, j, F(r))
+end
+
+function β(F::AcbField, i::Int, j::Int, r)
+    j > i && return β(F, j, i, r)
+    return getval!(β_int, elem_type(F), i, j, F(r))
+end
+
+function ψ(F::AcbField, i::Int, j::Int, r)
+    j > i && return ψ(F, j, i, r)
+    j == 1 && return inv(F(i+1)) - α(F, i, 1, r)
+    return getval!(ψ_int, elem_type(F), i, j, F(r))
+end
 
 function γ(F, i::Int, j::Int, r=RADIUS.R)
-    res = zero(F)
 
-    res = Nemo.addeq!(res, α_cached(F,i,j,r))
-    res = Nemo.addeq!(res, i*β_cached(F,i-1,j,r))
-    res = Nemo.sub!(res, res, ψ_cached(F,i,j,r))
-    res = res /(i*j)
+    j > i && return γ(F, j, i, r)
+
+    res = zero(F)
+    res = Nemo.add!(res, res, i*β(F,i-1,j,r))
+    res = Nemo.add!(res, res,   α(F,i,  j,r))
+    res = Nemo.sub!(res, res,   ψ(F,i,  j,r))
+    res = Nemo.div!(res, Nemo.div!(res, res, F(i)), F(j)) # res = res/(i*j)
 
     return F(abs(res))
 end
@@ -218,19 +224,6 @@ function expectation(OS::NormOrderStatistic, i::Int, j::Int)
         return expectation(OS, OS.n-j+1, OS.n-i+1)
 
     else
-        # F = parent(first(OS))
-        # S = zero(F)
-        # for r in 0:j-i-1
-        #     a = (r>0 ? OS.facs[r] : one(F))
-        #     for s in 0:j-i-1-r
-        #         b = (s>0 ? OS.facs[s] : one(F))
-        #         c = (j-i-1-r-s>0 ? OS.facs[j-i-1-r-s] : one(F))
-        #         C = inv(a*b*c)
-        #         S += (-one(F))^(r+s) * C * γ(F, i+r, OS.n-j+s+1, R)
-        #     end
-        # end
-        # return S*K(OS.facs, OS.n, i, j)
-
         n = OS.n
         C = K(OS.facs, n, i, j)
         F = parent(C)
