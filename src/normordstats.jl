@@ -154,7 +154,7 @@ mutable struct _IntegrationRadius
     R::Float64
 end
 
-const RADIUS = _IntegrationRadius(12.2) # Note: normcdf(-12.2) < 1.5e-34
+const RADIUS = _IntegrationRadius(18.0) # Note: normcdf(-18.0) < 1e-72
 
 Base.show(io::IO, ir::_IntegrationRadius) = print(io, "Radius of integration is set to $(ir.R).")
 
