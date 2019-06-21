@@ -10,29 +10,32 @@ export NormOrderStatistic, moment, expectation
 #
 ###############################################################################
 
-const _cache = Dict{Symbol, Dict}()
+const global _cache = Dict{Symbol, Dict}()
 
-function dropcache()
-    for k in keys(OrderStatistics._cache)
-        delete!(OrderStatistics._cache, k)
+function dropcache!(cache = _cache)
+    for k in keys(cache)
+        delete!(cache, k)
     end
+    return cache
 end
 
-function getval!(f, returnT::Type, args...)
+function setvalue!(cache, f, args, val)
     sf = Symbol(f)
-    if !(haskey(_cache, sf))
-        _cache[sf] = Dict{Type, Dict{typeof(args), returnT}}()
+    if !(haskey(cache, sf))::Bool
+        cache[sf] = Dict{typeof(args), typeof(val)}()
     end
+    return cache[sf][args] = val
+end
 
-    if !(haskey(_cache[sf], returnT))
-        _cache[sf][returnT] = Dict{typeof(args), returnT}()
+setcache!(f, args, val) = setvalue!(_cache, f, args, val)
+
+function getval!(f, ::Type{returnT}, args...) where returnT
+    sf = Symbol(f)
+    if !(haskey(_cache, sf))::Bool
+        _cache[sf] = Dict{typeof(args), returnT}()
     end
-
-    if !(haskey(_cache[sf][returnT], args))
-        _cache[sf][returnT][args] = f(args...)
-    end
-
-    return _cache[sf][returnT][args]::returnT
+    g() = f(args...)
+    return get!(g, _cache[sf], args)::returnT
 end
 
 ###############################################################################
