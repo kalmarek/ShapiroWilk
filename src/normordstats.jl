@@ -1,6 +1,6 @@
 module OrderStatistics
 
-using Statistics, StatsFuns, Nemo
+using Statistics, StatsFuns, LinearAlgebra, Nemo
 
 export NormOrderStatistic, moment, expectation
 
@@ -277,7 +277,10 @@ function Statistics.cov(OS::NormOrderStatistic)
             V[i,j] = cov(OS, i, j)
         end
     end
-    return Symmetric(V, :L)
+    return LinearAlgebra.symmetric(V, :L)
 end
+
+LinearAlgebra.symmetric_type(::Type{acb}) = acb
+LinearAlgebra.symmetric(x::acb, ::Symbol) = x
 
 end # of module OrderStatistics
