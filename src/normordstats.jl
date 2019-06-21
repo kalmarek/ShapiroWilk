@@ -283,4 +283,6 @@ end
 LinearAlgebra.symmetric_type(::Type{acb}) = acb
 LinearAlgebra.symmetric(x::acb, ::Symbol) = x
 
+include("precompute.jl")
+
 end # of module OrderStatistics
