@@ -88,7 +88,7 @@ mutable struct NormOrderStatistic{T} <: AbstractVector{T}
             OS.E[2] = -(5α44 - 4(10X*I₃1)) # -(5α(4:4) - 4E(5:5))
         else
             for i in 1:div(OS.n,2)
-                OS.E[i] = moment(OS, i)
+                OS.E[i] = moment(OS, i, pow=1)
             end
         end
 
@@ -115,7 +115,6 @@ StatsFuns.normcdf(x::acb) = (F = parent(x); Nemo.erfc(-x/sqrt(F(2)))/2)
 StatsFuns.normccdf(x::acb) = 1 - normcdf(x)
 StatsFuns.normpdf(x::acb) = (F = parent(x); 1/sqrt(2const_pi(F))*exp(-x^2/2))
 
-# I(x, i, j) = exp((i-1)*normlogcdf(x) + j*normlogccdf(x) + normlogpdf(x))
 I(x, i, j) = normcdf(x)^i * normccdf(x)^j * normpdf(x)
 
 function moment(OS::NormOrderStatistic, i::Int; pow=1, r=RADIUS.R)
@@ -178,26 +177,31 @@ function integrand(j::Int, x::Nemo.acb, r::acb)
 end
 
 function ψ_int(i::Int, j::Int, r::acb)
-    @info "ψ" i j
-    @time res = Nemo.integrate(parent(r),
+    res = Nemo.integrate(parent(r),
         x -> normcdf(x)^i * integrand(j, x, r), -r, r)
     return res
 end
 
 function α(F::AcbField, i::Int, j::Int, r)
-    j > i && return -α(F, j, i, r)
-    return getval!(α_int, elem_type(F), i, j, F(r))
+    j < i && return -α(F, j, i, r)
+    args = (i,j, F(r))
+    # returnT = first(Base.return_types(α_int, typeof(args)))
+    return getval!(α_int, acb, args...)
 end
 
 function β(F::AcbField, i::Int, j::Int, r)
-    j > i && return β(F, j, i, r)
-    return getval!(β_int, elem_type(F), i, j, F(r))
+    j < i && return β(F, j, i, r)
+    args = (i,j, F(r))
+    # returnT = first(Base.return_types(β_int, typeof(args)))
+    return getval!(β_int, acb, args...)
 end
 
 function ψ(F::AcbField, i::Int, j::Int, r)
-    j > i && return ψ(F, j, i, r)
-    j == 1 && return inv(F(i+1)) - α(F, i, 1, r)
-    return getval!(ψ_int, elem_type(F), i, j, F(r))
+    j < i && return ψ(F, j, i, r)
+    i == 1 && return inv(F(j+1)) - α(F, j, 1, r)
+    args = (i,j, F(r))
+    # returnT = first(Base.return_types(ψ_int, typeof(args)))::Type
+    return getval!(ψ_int, acb, args...)
 end
 
 function γ(F, i::Int, j::Int, r=RADIUS.R)
@@ -249,10 +253,6 @@ function expectation(OS::NormOrderStatistic, i::Int, j::Int)
         end
         return Nemo.mul!(tmp, S, C)
     end
-end
-
-function expectation(OS::NormOrderStatistic)
-    return [expectation(OS, i, j) for i in 1:OS.n, j in 1:OS.n]
 end
 
 ###############################################################################
