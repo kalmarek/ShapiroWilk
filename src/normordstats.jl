@@ -1,4 +1,4 @@
-module OrderStatistics
+module OrderStatisticsNemo
 
 using Statistics, StatsFuns, LinearAlgebra, Nemo
 
@@ -54,7 +54,7 @@ mutable struct NormOrderStatistic{T} <: AbstractVector{T}
             OS.E[2] = -(5α44 - 4(10X*I₃1)) # -(5α(4:4) - 4E(5:5))
         else
             for i in 1:div(OS.n,2)
-                OS.E[i] = moment(OS, i, pow=1)
+                OS.E[i] = F(moment(OS, i, pow=1))
             end
         end
 
@@ -68,8 +68,8 @@ mutable struct NormOrderStatistic{T} <: AbstractVector{T}
 end
 
 Base.size(OS::NormOrderStatistic) = (OS.n,)
-Base.IndexStyle(::Type{NormOrderStatistic{T}}) where T = IndexLinear()
-Base.getindex(OS::NormOrderStatistic{T}, i::Int) where T = OS.E[i]
+Base.IndexStyle(::Type{<:NormOrderStatistic}) = IndexLinear()
+Base.getindex(OS::NormOrderStatistic, i::Int) = OS.E[i]
 
 ###############################################################################
 #
@@ -88,12 +88,12 @@ function moment(OS::NormOrderStatistic, i::Int; pow=1, r=RADIUS.R)
     @assert 1<= i <= n
     C = OS.facs[n]/OS.facs[i-1]/OS.facs[n-i]
     F = parent(C)
-    return C*Nemo.integrate(F, x -> x^pow * I(x, i-1, n-i), -r, r)
+    return real(C*Nemo.integrate(F, x -> x^pow * I(x, i-1, n-i), -r, r))
 end
 
-expectation(OS::NormOrderStatistic) = OS.E
+expectation(OS::NormOrderStatistic) = real.(OS.E)
 
-expectation(OS::NormOrderStatistic, i::Int) = OS[i]
+expectation(OS::NormOrderStatistic, i::Int) = real(OS[i])
 
 function Base.show(io::IO, OS::NormOrderStatistic{T}) where T
     show(io, "Normal Order Statistics ($T-valued) for $(OS.n)-element samples")
@@ -217,7 +217,7 @@ function expectation(OS::NormOrderStatistic, i::Int, j::Int)
                 S = Nemo.addmul!(S, tmp, γ(F, i+r, n-j+s+1), tmp)
             end
         end
-        return Nemo.mul!(tmp, S, C)
+        return real(Nemo.mul!(tmp, S, C))
     end
 end
 
@@ -236,19 +236,43 @@ function Statistics.cov(OS::NormOrderStatistic, i::Int, j::Int)
 end
 
 function Statistics.cov(OS::NormOrderStatistic)
-    F = parent(first(OS))
-    V = fill(zero(F), (OS.n, OS.n))
-    for j in 1:OS.n
-        for i in j:OS.n
-            V[i,j] = cov(OS, i, j)
+    F = ArbField(precision(parent(first(OS))))
+    V = matrix(F, zeros(OS.n, OS.n))
+    for i = 1:OS.n
+        V[i, i] = F(cov(OS, i, i))
+        for j = i+1:OS.n
+            V[i, j] = F(cov(OS, i, j))
+            V[j, i] = V[i, j]
         end
     end
-    return LinearAlgebra.symmetric(V, :L)
+    return V
 end
 
-LinearAlgebra.symmetric_type(::Type{acb}) = acb
-LinearAlgebra.symmetric(x::acb, ::Symbol) = x
-
 include("precompute.jl")
+
+
+### needed for SWCoeffs
+
+function Base.:*(m::AbstractArray, n::Nemo.MatElem)
+    @boundscheck size(m, 2) == size(n, 1) || throw(ArgumentError("Incompatible sizes for matrix multiplication: $(join(size(m), "×")) and $(join(size(n), "×"))"))
+    res = similar(m, size(m, 1), size(n, 2))
+    @inbounds for c in 1:size(res, 2)
+        for r in 1:size(res, 1)
+            res[r, c] = sum(m[r, i]*n[i, c] for i in 1:size(m, 2))
+        end
+    end
+    return res
+end
+
+function Base.:*(m::Nemo.MatElem, n::AbstractArray)
+    @boundscheck size(m, 2) == size(n, 1) || throw(ArgumentError("Incompatible sizes for matrix multiplication: $(join(size(m), "×")) and $(join(size(n), "×"))"))
+    res = similar(n, size(m, 1), size(n, 2))
+    @inbounds for c in 1:size(res, 2)
+        for r in 1:size(res, 1)
+            res[r, c] = sum(m[r, i]*n[i, c] for i in 1:size(m, 2))
+        end
+    end
+    return res
+end
 
 end # of module OrderStatistics
