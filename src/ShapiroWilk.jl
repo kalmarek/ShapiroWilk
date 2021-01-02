@@ -29,8 +29,8 @@ function expectation end
 
 function SWCoeffs(OS)
     m = expectation(OS)
-    iV = inv(cov(OS))
-    A = m'*iV./sqrt(m'*iV*iV*m)
+    minvV = m'*inv(cov(OS))
+    A = minvV./sqrt(first(minvV*minvV'))
     return SWCoeffs(OS.n, -A[1,1:div(OS.n,2)])
 end
 
