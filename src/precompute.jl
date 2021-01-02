@@ -1,17 +1,53 @@
+###############################################################################
+#   Poor man's caching
+
+const global _cache = Dict{Symbol, Dict}()
+
+function dropcache!(cache = _cache)
+    for k in keys(cache)
+        delete!(cache, k)
+    end
+    return cache
+end
+
+function setvalue!(cache, f, args, val)
+    sf = Symbol(f)
+    if !(haskey(cache, sf))::Bool
+        cache[sf] = Dict{typeof(args), typeof(val)}()
+    end
+    return cache[sf][args] = val
+end
+
+setcache!(f, args, val) = setvalue!(_cache, f, args, val)
+
+function getval!(f, ::Type{returnT}, args...) where returnT
+    sf = Symbol(f)
+    if !(haskey(_cache, sf))::Bool
+        _cache[sf] = Dict{typeof(args), returnT}()
+    end
+    # @info "Computing $f with" args
+    g() = f(args...)
+    return get!(g, _cache[sf], args)::returnT
+end
+
+###############################################################################
+#   Precomutation of ψ
+
 ijs_ψ(n::Int) = [(i,j) for i in 2:div(n, 2) for j in i:n-i]
 
-function precompute_ψ(N::Integer, F::AcbField; R=OrderStatistics.RADIUS.R)
-    ijs = ijs_ψ(N)
-    args = [(i,j, F(R)) for (i,j) in ijs]
+function precompute_ψ(N::Integer, F::AcbField; R=RADIUS.R)
+    args = [(i,j, F(R)) for (i,j) in ijs_ψ(N)]
 
     ψ_vals = Vector{acb}(undef, length(args))
 
     Threads.@threads for i in 1:length(args)
         arg = args[i]
-        ψ_vals[i] = OrderStatistics.ψ_int(arg...)
+        ψ_vals[i] = ψ_int(arg...)
     end
     vals = Dict(zip(args, ψ_vals))
     for (k,v) in vals
-        OrderStatistics.setcache!(OrderStatistics.ψ_int, k, v)
+        setcache!(ψ_int, k, v)
     end
 end
+
+Base.hash(a::Nemo.acb, h::UInt=0) = h

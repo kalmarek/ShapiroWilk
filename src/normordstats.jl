@@ -2,41 +2,7 @@ module OrderStatistics
 
 using Statistics, StatsFuns, LinearAlgebra, Nemo
 
-export NormOrderStatistic, moment, expectation
-
-###############################################################################
-#
-#   Poor man's caching
-#
-###############################################################################
-
-const global _cache = Dict{Symbol, Dict}()
-
-function dropcache!(cache = _cache)
-    for k in keys(cache)
-        delete!(cache, k)
-    end
-    return cache
-end
-
-function setvalue!(cache, f, args, val)
-    sf = Symbol(f)
-    if !(haskey(cache, sf))::Bool
-        cache[sf] = Dict{typeof(args), typeof(val)}()
-    end
-    return cache[sf][args] = val
-end
-
-setcache!(f, args, val) = setvalue!(_cache, f, args, val)
-
-function getval!(f, ::Type{returnT}, args...) where returnT
-    sf = Symbol(f)
-    if !(haskey(_cache, sf))::Bool
-        _cache[sf] = Dict{typeof(args), returnT}()
-    end
-    g() = f(args...)
-    return get!(g, _cache[sf], args)::returnT
-end
+import ShapiroWilk: expectation
 
 ###############################################################################
 #
