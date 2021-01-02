@@ -34,7 +34,7 @@ function SWCoeffs(OS)
     return SWCoeffs(OS.n, -A[1,1:div(OS.n,2)])
 end
 
-include("normordstats.jl")
+include("normordstats_nemo.jl")
 include("royston.jl")
 
 end # of module ShapiroWilk
