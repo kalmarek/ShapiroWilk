@@ -1,8 +1,10 @@
 module OrderStatisticsNemo
 
-using Statistics, StatsFuns, LinearAlgebra, Nemo
+using Statistics
+using StatsFuns
+using Nemo
 
-import ShapiroWilk: expectation
+import ..expectation, ..moment
 
 ###############################################################################
 #
