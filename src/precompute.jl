@@ -36,18 +36,11 @@ end
 ijs_ψ(n::Int) = [(i, j) for i = 2:div(n, 2) for j = i:n-i]
 
 function _precompute_ψ(N::Integer, F::AcbField; R)
-    args = [(i, j, F(R)) for (i, j) in ijs_ψ(N)]
+    pairs = ijs_ψ(N)
+    tasks = [Threads.@spawn ψ(F, i, j, R) for (i, j) in pairs]
+    w = fetch.(tasks)
 
-    ψ_vals = Vector{acb}(undef, length(args))
-
-    Threads.@threads for i = 1:length(args)
-        arg = args[i]
-        ψ_vals[i] = ψ_int(arg...)
-    end
-    vals = Dict(zip(args, ψ_vals))
-    for (k, v) in vals
-        setcache!(ψ_int, k, v)
-    end
+    return pairs, w
 end
 
 Base.hash(a::Nemo.acb, h::UInt = UInt(0)) = hash(precision(parent(a)), h)
