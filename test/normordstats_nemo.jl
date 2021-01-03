@@ -1,6 +1,3 @@
-using ShapiroWilk.OrderStatisticsNemo
-using ShapiroWilk.OrderStatisticsNemo.Nemo
-
 function test_α_ij(n, prec, atol, R)
     CC = AcbField(prec)
     @testset "α_ij" begin
@@ -41,7 +38,10 @@ function test_β_ij(n, prec, atol, R)
     end
 end
 
-function test_sum_moments(OS, atol, R)
+function test_sum_moments_nemo(OS; atol, R)
+
+    @time OrderStatisticsNemo._precompute_ψ(OS.n, Nemo.base_ring(OS), R=R)
+
     @testset "Sums of products and moments" begin
         for i in 1:OS.n-1
             res = sum(expectation(OS, i, j, radius=R) for j in 1:OS.n)
@@ -58,8 +58,6 @@ end
 
 function numeric_tests_order_statistics_nemo(N, CC; atol, R)
 
-    @time OrderStatisticsNemo._precompute_ψ(N, CC, R=R)
-
     @testset "Relations between α, β and expectations/moments of OS using Nemo" begin
         prec=precision(CC)
         @time test_α_ij(N, prec, atol, R)
@@ -67,6 +65,6 @@ function numeric_tests_order_statistics_nemo(N, CC; atol, R)
         @time test_β_ij(N, prec, atol, R)
 
         OS = OrderStatisticsNemo.NormOrderStatistic(N, CC)
-        @time test_sum_moments(OS, atol, R)
+        @time test_sum_moments_nemo(OS; atol=atol, R=R)
     end
 end

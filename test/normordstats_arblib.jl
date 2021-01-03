@@ -1,6 +1,3 @@
-using ShapiroWilk.OrderStatisticsArblib
-using ShapiroWilk.OrderStatisticsArblib.Arblib
-
 function test_α_ij(n, prec, atol, R)
     @testset "α_ij (n=$n, prec=$prec, atol=$atol, R=$R)" begin
         α = OrderStatisticsArblib.α
@@ -44,7 +41,10 @@ function test_β_ij(n, prec, atol, R)
     end
 end
 
-function test_sum_moments(OS, atol, R)
+function test_sum_moments_arblib(OS; atol, R)
+
+    @time OrderStatisticsArblib._precompute_ψ(OS.n, prec=precision(OS), R=R)
+
     @testset "Sums of products and moments" begin
         for i = 1:OS.n-1
             res = sum(expectation(OS, i, j, radius=R) for j = 1:OS.n)
@@ -60,8 +60,6 @@ function test_sum_moments(OS, atol, R)
 end
 
 function numeric_tests_order_statistics_arblib(n::Integer; prec, atol, R)
-    @time OrderStatisticsArblib._precompute_ψ(n, prec=prec, R=R)
-
     @testset "Relations between α, β and expectations/moments of OS using Arblib" begin
 
         @time test_α_ij(n, prec, atol, R)
@@ -69,6 +67,6 @@ function numeric_tests_order_statistics_arblib(n::Integer; prec, atol, R)
         @time test_β_ij(n, prec, atol, R)
 
         OS = OrderStatisticsArblib.NormOrderStatistic(n, prec=prec)
-        @time test_sum_moments(OS, atol, R)
+        @time test_sum_moments_arblib(OS, atol=atol, R=R)
     end
 end
