@@ -73,6 +73,9 @@ Base.size(OS::NormOrderStatistic) = (OS.n,)
 Base.IndexStyle(::Type{<:NormOrderStatistic}) = IndexLinear()
 Base.getindex(OS::NormOrderStatistic, i::Int) = OS.E[i]
 
+Base.precision(OS::NormOrderStatistic) = precision(parent(first(OS)))
+Nemo.base_ring(OS::NormOrderStatistic) = parent(first(OS))
+
 ###############################################################################
 #
 #   Exact expected values of normal order statistics
@@ -85,12 +88,12 @@ StatsFuns.normpdf(x::acb) = (F = parent(x); 1/sqrt(2const_pi(F))*exp(-x^2/2))
 
 I(x, i, j) = normcdf(x)^i * normccdf(x)^j * normpdf(x)
 
-function moment(OS::NormOrderStatistic, i::Int; pow=1, r=RADIUS.R)
+function moment(OS::NormOrderStatistic, i::Int; pow=1, radius=18.0)
     n = OS.n
     @assert 1<= i <= n
     C = OS.facs[n]/OS.facs[i-1]/OS.facs[n-i]
-    F = parent(C)
-    return real(C*Nemo.integrate(F, x -> x^pow * I(x, i-1, n-i), -r, r))
+    F = Nemo.base_ring(OS)
+    return real(C*Nemo.integrate(F, x -> x^pow * I(x, i-1, n-i), -radius, radius))
 end
 
 expectation(OS::NormOrderStatistic) = real.(OS.E)
@@ -111,7 +114,7 @@ end
 # Volume 20, Number 2 (1949), 279-285.
 # doi:10.1214/aoms/1177730036
 #
-# Radius of integration taken after
+# Radius of integration = 12.2 in
 # Rudolph S. Parrish
 # Computing variances and covariances of normal order statistics
 # Communications in Statistics - Simulation and Computation
@@ -119,16 +122,6 @@ end
 # doi:10.1080/03610919208813009
 #
 ###############################################################################
-
-mutable struct _IntegrationRadius
-    R::Float64
-end
-
-const RADIUS = _IntegrationRadius(18.0) # Note: normcdf(-18.0) < 1e-72
-
-Base.show(io::IO, ir::_IntegrationRadius) = print(io, "Radius of integration is set to $(ir.R).")
-
-setradius!(r) = (RADIUS.R = Float64(r); RADIUS)
 
 function α_int(i::Int, j::Int, r::acb)
     res = Nemo.integrate(parent(r), x -> x * normcdf(x)^i * normccdf(x)^j, -r, r)
@@ -140,7 +133,7 @@ function β_int(i::Int, j::Int, r::acb)
     return res
 end
 
-function integrand(j::Int, x::Nemo.acb, r::acb)
+function integrand(j::Int, x::acb, r::acb)
     return Nemo.integrate(parent(r), y -> normcdf(y)^j, -r, -x)
 end
 
@@ -172,7 +165,7 @@ function ψ(F::AcbField, i::Int, j::Int, r)
     return getval!(ψ_int, acb, args...)
 end
 
-function γ(F, i::Int, j::Int, r=RADIUS.R)
+function γ(F, i::Int, j::Int, r)
 
     j > i && return γ(F, j, i, r)
 
@@ -190,22 +183,21 @@ function K(facs::Factorials, n::Integer, i::Integer, j::Integer)
     return facs[n]/facs[i-1]/facs[n-j]/facs[j-i-1]
 end
 
-function expectation(OS::NormOrderStatistic, i::Int, j::Int)
+function expectation(OS::NormOrderStatistic, i::Int, j::Int; radius=18.0)
     if i == j
-        return moment(OS, i, pow=2)
+        return moment(OS, i, pow=2, radius=radius)
     elseif i > j
-        return expectation(OS, j, i)
+        return expectation(OS, j, i, radius=radius)
     elseif i+j > OS.n+1
-        return expectation(OS, OS.n-j+1, OS.n-i+1)
-
+        return expectation(OS, OS.n-j+1, OS.n-i+1, radius=radius)
     else
         n = OS.n
         C = K(OS.facs, n, i, j)
-        F = parent(C)
-        S = zero(C)
-        num = zero(C)
-        denom = one(C)
-        tmp = zero(C)
+        F = Nemo.base_ring(OS)
+        S = zero(F)
+        num = zero(F)
+        denom = one(F)
+        tmp = zero(F)
 
         NUM = OS.facs[j-i-1]
         NEGATIVE_NUM = -NUM
@@ -216,7 +208,7 @@ function expectation(OS::NormOrderStatistic, i::Int, j::Int)
                 denom = Nemo.mul!(denom, OS.facs[r], OS.facs[s])
                 denom = Nemo.mul!(denom, denom, OS.facs[j-i-1-r-s])
                 tmp = Nemo.div!(tmp, num, denom)
-                S = Nemo.addmul!(S, tmp, γ(F, i+r, n-j+s+1), tmp)
+                S = Nemo.addmul!(S, tmp, γ(F, i+r, n-j+s+1, radius), tmp)
             end
         end
         return real(Nemo.mul!(tmp, S, C))
@@ -238,7 +230,7 @@ function Statistics.cov(OS::NormOrderStatistic, i::Int, j::Int)
 end
 
 function Statistics.cov(OS::NormOrderStatistic)
-    F = ArbField(precision(parent(first(OS))))
+    F = ArbField(precision(OS))
     V = matrix(F, zeros(OS.n, OS.n))
     for i = 1:OS.n
         V[i, i] = F(cov(OS, i, i))
