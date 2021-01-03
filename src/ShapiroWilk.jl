@@ -12,5 +12,6 @@ include("swcoeffs.jl")
 include("royston.jl")
 
 include("normordstats_nemo.jl")
+include("normordstats_arblib.jl")
 
 end # of module ShapiroWilk

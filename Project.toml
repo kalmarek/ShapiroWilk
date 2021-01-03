@@ -1,13 +1,23 @@
 name = "ShapiroWilk"
 uuid = "44b68fe8-cdb8-5d11-ad39-d72135cb7f0d"
+authors = ["Marek Kaluba <kalmar@amu.edu.pl>"]
+version = "0.1.0"
 
 [deps]
-BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+Arblib = "fb37089c-8514-4489-9461-98f9c8763369"
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
-HypothesisTests = "09f84164-cd44-5f33-b23f-e6b0d136a0d5"
+LRUCache = "8ac3fa9e-de4c-5943-b1dc-09c6b5f20637"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Memoize = "c03570c3-d221-55d1-a50c-7939bbd78826"
 Nemo = "2edaba10-b0f1-5616-af89-8c11ac63239a"
-ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
 SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 StatsFuns = "4c63d2b9-4356-54db-8cca-17b64c39e42c"
+
+[compat]
+Arblib = "0.3"
+LRUCache = "1.2"
+Memoize = "0.4"
+Nemo = "0.19"
+StatsFuns = "0.9"
+julia = "1"
