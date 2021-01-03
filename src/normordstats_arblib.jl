@@ -402,7 +402,7 @@ end
 
 ijs_ψ(n::Int) = [(i, j) for i = 2:div(n, 2) for j = i:n-i]
 
-function _precompute_sw_coeffs(n; prec, R)
+function _precompute_ψ(n; prec, R)
     pairs = ijs_ψ(n)
     tasks = [Threads.@spawn ψ(prec, i, j, R) for (i, j) in pairs]
     w = fetch.(tasks)

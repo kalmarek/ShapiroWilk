@@ -60,7 +60,7 @@ function test_sum_moments(OS, atol, R)
 end
 
 function numeric_tests_order_statistics_arblib(n::Integer; prec, atol, R)
-    @time OrderStatisticsArblib._precompute_sw_coeffs(n, prec=prec, R=R)
+    @time OrderStatisticsArblib._precompute_ψ(n, prec=prec, R=R)
 
     @testset "Relations between α, β and expectations/moments of OS using Arblib" begin
 

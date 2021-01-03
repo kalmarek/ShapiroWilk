@@ -20,3 +20,5 @@ test_sum_moments(10, prec=128, atol=3e-32, R=18.0)
 test_sum_moments(20, prec=128, atol=7e-27, R=18.0)
 
 
+
+include("swcoeffs.jl")
