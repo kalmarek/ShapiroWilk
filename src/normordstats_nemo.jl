@@ -27,12 +27,12 @@ end
 
 mutable struct NormOrderStatistic <: OrderStatistic{Nemo.arb}
     n::Int
-    facs::Factorials{T}
-    E::Vector{T}
+    facs::Factorials{acb}
+    E::Vector{acb}
 
     function NormOrderStatistic(n::Int, F)
 
-        OS = new{elem_type(F)}(n, Factorials([nf(F(k)) for k in 1:n]))
+        OS = new(n, Factorials([nf(F(k)) for k in 1:n]))
 
         OS.E = fill(zero(F), OS.n)
         # expected values of order statistics
@@ -40,7 +40,7 @@ mutable struct NormOrderStatistic <: OrderStatistic{Nemo.arb}
         # N. Balakrishnan, A. Clifford Cohen
         # Order Statistics & Inference: Estimation Methods
         # Section 3.9
-        π = const_pi(F)
+        π = Nemo.const_pi(F)
         X = sqrt(1/π)
         if OS.n == 2
             OS.E[1] = -X # -α(2:2), after eq (3.9.4)
@@ -72,10 +72,10 @@ end
 
 Base.size(OS::NormOrderStatistic) = (OS.n,)
 Base.IndexStyle(::Type{<:NormOrderStatistic}) = IndexLinear()
-Base.getindex(OS::NormOrderStatistic, i::Int) = OS.E[i]
+Base.getindex(OS::NormOrderStatistic, i::Integer) = real(OS.E[i])
 
 Base.precision(OS::NormOrderStatistic) = precision(parent(first(OS)))
-Nemo.base_ring(OS::NormOrderStatistic) = parent(first(OS))
+Nemo.base_ring(OS::NormOrderStatistic) = Nemo.AcbField(precision(OS))
 
 ###############################################################################
 #
@@ -99,11 +99,7 @@ end
 
 expectation(OS::NormOrderStatistic) = real.(OS.E)
 
-expectation(OS::NormOrderStatistic, i::Int) = real(OS[i])
-
-function Base.show(io::IO, OS::NormOrderStatistic{T}) where T
-    show(io, "Normal Order Statistics ($T-valued) for $(OS.n)-element samples")
-end
+expectation(OS::NormOrderStatistic, i::Int) = OS[i]
 
 ###############################################################################
 #
@@ -232,7 +228,7 @@ function Statistics.cov(OS::NormOrderStatistic)
             V[j, i] = V[i, j]
         end
     end
-    return V
+    return V # V is a Nemo.MatElem
 end
 
 include("precompute.jl")

@@ -35,7 +35,8 @@ end
 
 ijs_ψ(n::Int) = [(i, j) for i = 2:div(n, 2) for j = i:n-i]
 
-function _precompute_ψ(N::Integer, F::AcbField; R)
+function _precompute_ψ(N::Integer; prec, R)
+    F = Nemo.AcbField(prec)
     pairs = ijs_ψ(N)
     tasks = [Threads.@spawn ψ(F, i, j, R) for (i, j) in pairs]
     w = fetch.(tasks)

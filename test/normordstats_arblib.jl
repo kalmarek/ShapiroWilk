@@ -45,7 +45,7 @@ function test_sum_moments_arblib(OS; atol, R)
 
     @time OrderStatisticsArblib._precompute_ψ(OS.n, prec=precision(OS), R=R)
 
-    @testset "Sums of products and moments" begin
+    @testset "Sums of products and moments: Arblib (n=$(OS.n))" begin
         for i = 1:OS.n-1
             res = sum(expectation(OS, i, j, radius=R) for j = 1:OS.n)
             @info res
@@ -60,7 +60,7 @@ function test_sum_moments_arblib(OS; atol, R)
 end
 
 function numeric_tests_order_statistics_arblib(n::Integer; prec, atol, R)
-    @testset "Relations between α, β and expectations/moments of OS using Arblib" begin
+    @testset "Relations between α, β and expectations/moments of OS using Arblib (n=$n)" begin
 
         @time test_α_ij(n, prec, atol, R)
         @time test_β_ii(n, prec, atol, R)
