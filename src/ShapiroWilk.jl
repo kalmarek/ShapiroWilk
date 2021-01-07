@@ -1,12 +1,13 @@
 module ShapiroWilk
 
-import Statistics: cov
-import StatsFuns: norminvcdf
+import Statistics
 
 export SWCoeffs, expectation, moment
 
 function expectation end
 function moment end
+
+include("orderstatistics.jl")
 
 include("swcoeffs.jl")
 include("royston.jl")

@@ -5,6 +5,7 @@ using StatsFuns
 using Nemo
 
 import ..expectation, ..moment
+import ..OrderStatistic
 
 ###############################################################################
 #
@@ -24,7 +25,7 @@ Base.@propagate_inbounds function Base.getindex(f::Factorials, i::Integer)
     return f.cache[i]
 end
 
-mutable struct NormOrderStatistic{T} <: AbstractVector{T}
+mutable struct NormOrderStatistic <: OrderStatistic{Nemo.arb}
     n::Int
     facs::Factorials{T}
     E::Vector{T}
@@ -220,14 +221,6 @@ end
 #   Exact variances and covariances
 #
 ###############################################################################
-
-function Statistics.var(OS::NormOrderStatistic, i::Int)
-    return expectation(OS,i,i) - expectation(OS,i)^2
-end
-
-function Statistics.cov(OS::NormOrderStatistic, i::Int, j::Int)
-    return expectation(OS,i,j) - expectation(OS,i)*expectation(OS,j)
-end
 
 function Statistics.cov(OS::NormOrderStatistic)
     F = ArbField(precision(OS))

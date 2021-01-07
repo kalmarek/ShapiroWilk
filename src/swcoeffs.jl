@@ -1,3 +1,6 @@
+import StatsFuns: norminvcdf
+import Statistics: cov
+
 struct SWCoeffs{T} <: AbstractVector{T}
     N::Int
     A::Vector{T}

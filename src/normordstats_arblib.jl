@@ -7,6 +7,7 @@ using Memoize
 using LRUCache
 
 import ..expectation, ..moment
+import ..OrderStatistic
 
 Arblib.fac!(a::Arblib.ArbLike, n::Signed) = Arblib.fac!(a, UInt(n))
 Arblib.fac!(a::Arblib.Mag, n::Signed) = Arblib.fac!(a, UInt(n))
@@ -14,7 +15,7 @@ Arblib.fac!(a::Arblib.Mag, n::Signed) = Arblib.fac!(a, UInt(n))
 struct Factorials <: AbstractVector{ArbRef}
     cache::ArbVector
 
-    function Factorials(n::Integer; prec = 256)
+    function Factorials(n::Integer; prec)
         cache = ArbVector(n + 1, prec = prec)
         for i = 1:n+1
             Arblib.fac!(Arblib.ref(cache, i), i - 1)
@@ -32,12 +33,12 @@ Base.@propagate_inbounds function Base.getindex(f::Factorials, i::Integer)
     return Arblib.ref(f.cache, i + 1)
 end
 
-struct NormOrderStatistic <: AbstractVector{Arb}
+struct NormOrderStatistic <: OrderStatistic{Arb}
     n::Int
     factorial::Factorials
     E::ArbVector
 
-    function NormOrderStatistic(n::Int; prec = 256)
+    function NormOrderStatistic(n::Int; prec)
 
         OS = new(n, Factorials(n, prec = prec), ArbVector(n, prec = prec))
         π_ = Arb(π, prec = prec)
@@ -367,23 +368,6 @@ end
 
 ################################################################################
 #   Exact variances and covariances
-
-function Statistics.var(OS::NormOrderStatistic, i::Integer)
-    # return expectation(OS, i, i) - expectation(OS, i)^2
-    Ei² = expectation(OS, i)
-    Arblib.pow!(Ei², Ei², UInt(2))
-    Eii = expectation(OS, i, i)
-    return Arblib.sub!(Eii, Eii, Ei²)
-end
-
-function Statistics.cov(OS::NormOrderStatistic, i::Integer, j::Integer)
-    # return expectation(OS,i,j) - expectation(OS,i)*expectation(OS,j)
-    i == j && return Statistics.var(OS, i)
-    EiEj = expectation(OS, i)
-    Arblib.mul!(EiEj, EiEj, expectation(OS, j))
-    Eij = expectation(OS, i, j)
-    return Arblib.sub!(Eij, Eij, EiEj)
-end
 
 function Statistics.cov(OS::NormOrderStatistic)
     V = ArbMatrix(OS.n, OS.n, prec = precision(OS))
