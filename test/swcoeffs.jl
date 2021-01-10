@@ -13,7 +13,7 @@ end
 @testset "Shapiro-Wilk coefficients" begin
     @test ShapiroWilk.SWCoeffs(10) isa AbstractVector{<:Float64}
 
-    CC = Nemo.AcbField(96)
+    CC = Nemo.AcbField(64)
     OS1 = OrderStatisticsNemo.NormOrderStatistic(10, CC)
     @test cov(OS1) isa Nemo.MatElem
     @test ShapiroWilk.SWCoeffs(OS1) isa AbstractVector{<:Nemo.arb}
@@ -28,7 +28,7 @@ end
         @test all(approx_error .> 8e-5)
     end
 
-    OS2 = OrderStatisticsArblib.NormOrderStatistic(10, prec = 96)
+    OS2 = OrderStatisticsArblib.NormOrderStatistic(10, prec = 64)
     @test cov(OS2) isa Arblib.ArbMatrix
     @test ShapiroWilk.SWCoeffs(OS2) isa AbstractVector{<:Arblib.Arb}
 
@@ -42,11 +42,13 @@ end
     @test Arblib.contains_zero(dot(sw_10_arblib, sw_10_arblib) - 1)
     @test Arblib.contains_zero(sum(sw_10_arblib'*cov(OS2)))
 
-    @test maximum(abs.(Arb.(sw_10_nemo) .- sw_10_arblib)) < 2e-19
+    @test maximum(abs.(Arb.(sw_10_nemo) .- sw_10_arblib)) < 7e-10
 
-    sw_20_nemo = let N = 20, prec=128
+    sw_20_nemo = let N = 20, prec=96
 
         OS = OrderStatisticsNemo.NormOrderStatistic(20, Nemo.AcbField(prec))
+
+        OrderStatisticsNemo._precompute_ψ(N, prec=prec, R=18.0)
 
         sw = ShapiroWilk.SWCoeffs(OS)
 
@@ -59,8 +61,10 @@ end
         sw
     end
 
-    sw_20_arblib = let N = 20, prec = 128
+    sw_20_arblib = let N = 20, prec = 96
         OS = OrderStatisticsArblib.NormOrderStatistic(N, prec = prec)
+
+        OrderStatisticsArblib._precompute_ψ(N, prec=prec, R=18.0)
 
         sw = ShapiroWilk.SWCoeffs(OS)
 
@@ -73,5 +77,5 @@ end
         sw
     end
 
-    @test maximum(abs.(Arb.(sw_20_nemo) .- sw_20_arblib)) < 5e-22
+    @test maximum(abs.(Arb.(sw_20_nemo) .- sw_20_arblib)) < 8e-12
 end
