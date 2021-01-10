@@ -4,8 +4,8 @@ import Statistics
 import Distributions
 
 using Arblib
-using Memoize
-using LRUCache
+import Memoize: @memoize
+import LRUCache: LRU
 
 import ..OrderStatistic
 
@@ -319,13 +319,20 @@ end
     @assert i <= j
 
     @debug "memoizing γ with prec=$prec, i=$i, j=$j, r=$r"
-    return (α(prec, i, j, r) + i * β(prec, i - 1, j, r) - ψ(prec, i, j, r)) / (i * j)
+    return (α(prec, i, j, r) + i * β(prec, i - 1, j, r) - ψ(prec, i, j, r)) /
+           (i * j)
 end
 
 γ(prec::Integer, i::Integer, j::Integer, r) =
     (j < i ? _γ(prec, j, i, r) : _γ(prec, i, j, r))
 
-function K!(res::Arblib.ArbOrRef, facs::Factorials, n::Integer, i::Integer, j::Integer)
+function K!(
+    res::Arblib.ArbOrRef,
+    facs::Factorials,
+    n::Integer,
+    i::Integer,
+    j::Integer,
+)
     #n!/((i-1)!*(n-j)!*(j-i-1)!)
     res[] = Arb(facs[n])
     Arblib.div!(res, res, facs[i-1])

@@ -14,7 +14,7 @@ import ..OrderStatistic
 #
 ###############################################################################
 
-nf(k) = Nemo.gamma(k+1)
+nf(k) = Nemo.gamma(k + 1)
 
 struct Factorials{T} <: AbstractVector{T}
     cache::Vector{T}
@@ -33,7 +33,7 @@ mutable struct NormOrderStatistic <: OrderStatistic{Nemo.arb}
 
     function NormOrderStatistic(n::Int, F)
 
-        OS = new(n, Factorials([nf(F(k)) for k in 1:n]))
+        OS = new(n, Factorials([nf(F(k)) for k = 1:n]))
 
         OS.E = fill(zero(F), OS.n)
         # expected values of order statistics
@@ -42,30 +42,30 @@ mutable struct NormOrderStatistic <: OrderStatistic{Nemo.arb}
         # Order Statistics & Inference: Estimation Methods
         # Section 3.9
         π = Nemo.const_pi(F)
-        X = sqrt(1/π)
+        X = sqrt(1 / π)
         if OS.n == 2
             OS.E[1] = -X # -α(2:2), after eq (3.9.4)
         elseif OS.n == 3
-            OS.E[1] = -3X/2 # -α(3:3), after eq (3.9.8)
+            OS.E[1] = -3X / 2 # -α(3:3), after eq (3.9.8)
         elseif OS.n == 4
-            α44 = (6X/π)*atan(sqrt(F(2)))
+            α44 = (6X / π) * atan(sqrt(F(2)))
             OS.E[1] = -α44 # -α(4:4), after eq (3.9.10)
-            OS.E[2] = -(4*3X/2 - 3α44) # -(4α(3:3) - 3*α(4:4))
+            OS.E[2] = -(4 * 3X / 2 - 3α44) # -(4α(3:3) - 3*α(4:4))
         elseif OS.n == 5
-            I₃1 = 3/(2π) * atan(sqrt(F(2))) - F(1)/4 # I₃(1), eq (3.9.11)
+            I₃1 = 3 / (2π) * atan(sqrt(F(2))) - F(1) / 4 # I₃(1), eq (3.9.11)
             OS.E[1] = -10X * I₃1 # -α(5:5), eq (3.9.11)
-            α44 = (6X/π)*atan(sqrt(F(2)))
-            OS.E[2] = -(5α44 - 4(10X*I₃1)) # -(5α(4:4) - 4E(5:5))
+            α44 = (6X / π) * atan(sqrt(F(2)))
+            OS.E[2] = -(5α44 - 4(10X * I₃1)) # -(5α(4:4) - 4E(5:5))
         else
-            for i in 1:div(OS.n,2)
+            for i = 1:div(OS.n, 2)
                 OS.E[i] = F(Distributions.moment(OS, i, pow = 1))
             end
         end
 
         if iseven(OS.n)
-            OS.E[div(OS.n,2)+1: end] = -reverse(OS.E[1:div(OS.n,2)])
+            OS.E[div(OS.n, 2)+1:end] = -reverse(OS.E[1:div(OS.n, 2)])
         else
-            OS.E[div(OS.n, 2)+2:end] = -reverse(OS.E[1:div(OS.n,2)])
+            OS.E[div(OS.n, 2)+2:end] = -reverse(OS.E[1:div(OS.n, 2)])
         end
         return OS
     end
@@ -99,10 +99,12 @@ function Distributions.moment(
     radius = 18.0,
 )
     n = OS.n
-    @assert 1<= i <= n
-    C = OS.facs[n]/OS.facs[i-1]/OS.facs[n-i]
+    @assert 1 <= i <= n
+    C = OS.facs[n] / OS.facs[i-1] / OS.facs[n-i]
     F = Nemo.base_ring(OS)
-    return real(C*Nemo.integrate(F, x -> x^pow * I(x, i-1, n-i), -radius, radius))
+    return real(
+        C * Nemo.integrate(F, x -> x^pow * I(x, i - 1, n - i), -radius, radius),
+    )
 end
 
 Distributions.expectation(OS::NormOrderStatistic) = real.(OS.E)
@@ -157,22 +159,22 @@ end
 
 function α(F::AcbField, i::Int, j::Int, r)
     j < i && return -α(F, j, i, r)
-    args = (i,j, F(r))
+    args = (i, j, F(r))
     # returnT = first(Base.return_types(α_int, typeof(args)))
     return getval!(α_int, acb, args...)
 end
 
 function β(F::AcbField, i::Int, j::Int, r)
     j < i && return β(F, j, i, r)
-    args = (i,j, F(r))
+    args = (i, j, F(r))
     # returnT = first(Base.return_types(β_int, typeof(args)))
     return getval!(β_int, acb, args...)
 end
 
 function ψ(F::AcbField, i::Int, j::Int, r)
     j < i && return ψ(F, j, i, r)
-    i == 1 && return inv(F(j+1)) - α(F, j, 1, r)
-    args = (i,j, F(r))
+    i == 1 && return inv(F(j + 1)) - α(F, j, 1, r)
+    args = (i, j, F(r))
     # returnT = first(Base.return_types(ψ_int, typeof(args)))::Type
     return getval!(ψ_int, acb, args...)
 end
@@ -182,9 +184,9 @@ function γ(F, i::Int, j::Int, r)
     j > i && return γ(F, j, i, r)
 
     res = zero(F)
-    res = Nemo.add!(res, res, i*β(F,i-1,j,r))
-    res = Nemo.add!(res, res,   α(F,i,  j,r))
-    res = Nemo.sub!(res, res,   ψ(F,i,  j,r))
+    res = Nemo.add!(res, res, i * β(F, i - 1, j, r))
+    res = Nemo.add!(res, res, α(F, i, j, r))
+    res = Nemo.sub!(res, res, ψ(F, i, j, r))
     res = Nemo.div!(res, Nemo.div!(res, res, F(i)), F(j)) # res = res/(i*j)
 
     return F(abs(res))
@@ -192,7 +194,7 @@ end
 
 function K(facs::Factorials, n::Integer, i::Integer, j::Integer)
     #n!/((i-1)!*(n-j)!*(j-i-1)!)
-    return facs[n]/facs[i-1]/facs[n-j]/facs[j-i-1]
+    return facs[n] / facs[i-1] / facs[n-j] / facs[j-i-1]
 end
 
 function Distributions.expectation(
@@ -224,13 +226,18 @@ function Distributions.expectation(
         NUM = OS.facs[j-i-1]
         NEGATIVE_NUM = -NUM
 
-        for r in 0:j-i-1
-            for s in 0:j-i-1-r
-                num = (isodd(r+s) ? NEGATIVE_NUM : NUM)
+        for r = 0:j-i-1
+            for s = 0:j-i-1-r
+                num = (isodd(r + s) ? NEGATIVE_NUM : NUM)
                 denom = Nemo.mul!(denom, OS.facs[r], OS.facs[s])
                 denom = Nemo.mul!(denom, denom, OS.facs[j-i-1-r-s])
                 tmp = Nemo.div!(tmp, num, denom)
-                S = Nemo.addmul!(S, tmp, γ(F, i+r, n-j+s+1, radius), tmp)
+                S = Nemo.addmul!(
+                    S,
+                    tmp,
+                    γ(F, i + r, n - j + s + 1, radius),
+                    tmp,
+                )
             end
         end
         return real(Nemo.mul!(tmp, S, C))
@@ -262,22 +269,30 @@ include("precompute.jl")
 ### needed for SWCoeffs
 
 function Base.:*(m::AbstractArray, n::Nemo.MatElem)
-    @boundscheck size(m, 2) == size(n, 1) || throw(ArgumentError("Incompatible sizes for matrix multiplication: $(join(size(m), "×")) and $(join(size(n), "×"))"))
+    @boundscheck size(m, 2) == size(n, 1) || throw(
+        ArgumentError(
+            "Incompatible sizes for matrix multiplication: $(join(size(m), "×")) and $(join(size(n), "×"))",
+        ),
+    )
     res = similar(m, size(m, 1), size(n, 2))
-    @inbounds for c in 1:size(res, 2)
-        for r in 1:size(res, 1)
-            res[r, c] = sum(m[r, i]*n[i, c] for i in 1:size(m, 2))
+    @inbounds for c = 1:size(res, 2)
+        for r = 1:size(res, 1)
+            res[r, c] = sum(m[r, i] * n[i, c] for i = 1:size(m, 2))
         end
     end
     return res
 end
 
 function Base.:*(m::Nemo.MatElem, n::AbstractArray)
-    @boundscheck size(m, 2) == size(n, 1) || throw(ArgumentError("Incompatible sizes for matrix multiplication: $(join(size(m), "×")) and $(join(size(n), "×"))"))
+    @boundscheck size(m, 2) == size(n, 1) || throw(
+        ArgumentError(
+            "Incompatible sizes for matrix multiplication: $(join(size(m), "×")) and $(join(size(n), "×"))",
+        ),
+    )
     res = similar(n, size(m, 1), size(n, 2))
-    @inbounds for c in 1:size(res, 2)
-        for r in 1:size(res, 1)
-            res[r, c] = sum(m[r, i]*n[i, c] for i in 1:size(m, 2))
+    @inbounds for c = 1:size(res, 2)
+        for r = 1:size(res, 1)
+            res[r, c] = sum(m[r, i] * n[i, c] for i = 1:size(m, 2))
         end
     end
     return res
