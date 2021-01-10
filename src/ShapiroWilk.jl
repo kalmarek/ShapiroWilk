@@ -17,14 +17,14 @@ function Wstatistic(X, A::SWCoeffs)
 
     @assert issorted(X)
 
-    if last(X) - first(X) < length(X)*eps(eltype(X))
+    if last(X) - first(X) < length(X) * eps(eltype(X))
         throw("Data seems to be constant!")
     end
 
-    AX = dot(A,X)
-    S² = sum(abs2, X.-mean(X))
+    µ = Statistics.mean(X)
+    S² = sum(x->abs2(x-µ), X)
 
-    return AX^2/S²
+    return dot(A, X)^2 / S²
 end
 
 end # of module ShapiroWilk
