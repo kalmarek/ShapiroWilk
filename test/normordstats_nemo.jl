@@ -44,13 +44,13 @@ function test_sum_moments_nemo(OS; atol, R)
 
     @testset "Sums of products and moments: Nemo (n = $(OS.n))" begin
         for i in 1:OS.n-1
-            res = sum(expectation(OS, i, j, radius=R) for j in 1:OS.n)
+            res = sum(Distributions.expectation(OS, i, j, radius=R) for j in 1:OS.n)
             @info res
             @test Nemo.contains_zero(res - 1)
             @test res - 1 < atol
         end
 
-        res = sum(moment(OS, i, pow=2, radius=R) for i in 1:OS.n)
+        res = sum(Distributions.moment(OS, i, pow=2, radius=R) for i in 1:OS.n)
         @test Nemo.contains_zero(res - OS.n)
         @test res - OS.n < atol
     end

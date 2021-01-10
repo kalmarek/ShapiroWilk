@@ -1,16 +1,15 @@
 module OrderStatisticsArblib
 
 import Statistics
-using Arblib
+import Distributions
 
+using Arblib
 using Memoize
 using LRUCache
 
-import ..expectation, ..moment
 import ..OrderStatistic
 
 Arblib.fac!(a::Arblib.ArbLike, n::Signed) = Arblib.fac!(a, UInt(n))
-Arblib.fac!(a::Arblib.Mag, n::Signed) = Arblib.fac!(a, UInt(n))
 
 struct Factorials <: AbstractVector{ArbRef}
     cache::ArbVector
@@ -63,7 +62,7 @@ struct NormOrderStatistic <: OrderStatistic{Arb}
             OS.E[2] = -(5α44 - 4(10X * I₃1)) # -(5α(4:4) - 4E(5:5))
         else
             for i = 1:div(OS.n, 2)
-                OS.E[i] = moment(OS, i, pow = 1)
+                OS.E[i] = Distributions.moment(OS, i, pow = 1)
             end
         end
 
@@ -158,7 +157,12 @@ function I!(res::Arblib.AcbOrRef, x, i, j; tmp1 = zero(res), tmp2 = zero(res))
     return res
 end
 
-function moment(OS::NormOrderStatistic, i::Integer; pow=1, radius=Acb(18.0, prec=precision(OS)))
+function Distributions.moment(
+    OS::NormOrderStatistic,
+    i::Integer;
+    pow = 1,
+    radius = Acb(18.0, prec = precision(OS)),
+)
     n = OS.n
     @assert 1 <= i <= n
     C = Arb(OS.factorial[n], prec = precision(OS))
@@ -190,8 +194,8 @@ function moment(OS::NormOrderStatistic, i::Integer; pow=1, radius=Acb(18.0, prec
     return Arblib.realref(Arblib.mul!(res, res, C))
 end
 
-expectation(OS::NormOrderStatistic) = copy(OS.E)
-expectation(OS::NormOrderStatistic, i::Integer) = OS[i]
+Distributions.expectation(OS::NormOrderStatistic) = copy(OS.E)
+Distributions.expectation(OS::NormOrderStatistic, i::Integer) = OS[i]
 
 ###############################################################################
 #
@@ -330,13 +334,23 @@ function K!(res::Arblib.ArbOrRef, facs::Factorials, n::Integer, i::Integer, j::I
     return res
 end
 
-function expectation(OS::NormOrderStatistic, i::Integer, j::Integer; radius = 18.0)
+function Distributions.expectation(
+    OS::NormOrderStatistic,
+    i::Integer,
+    j::Integer;
+    radius = 18.0,
+)
     if i == j
-        return moment(OS, i, pow = 2, radius=radius)
+        return Distributions.moment(OS, i, pow = 2, radius = radius)
     elseif i > j
-        return expectation(OS, j, i, radius=radius)
+        return Distributions.expectation(OS, j, i, radius = radius)
     elseif i + j > OS.n + 1
-        return expectation(OS, OS.n - j + 1, OS.n - i + 1, radius=radius)
+        return Distributions.expectation(
+            OS,
+            OS.n - j + 1,
+            OS.n - i + 1,
+            radius = radius,
+        )
     else
         n = OS.n
         res = Arb(prec = precision(OS))

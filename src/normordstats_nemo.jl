@@ -2,9 +2,10 @@ module OrderStatisticsNemo
 
 using Statistics
 using StatsFuns
+import Distributions
+
 using Nemo
 
-import ..expectation, ..moment
 import ..OrderStatistic
 
 ###############################################################################
@@ -57,7 +58,7 @@ mutable struct NormOrderStatistic <: OrderStatistic{Nemo.arb}
             OS.E[2] = -(5α44 - 4(10X*I₃1)) # -(5α(4:4) - 4E(5:5))
         else
             for i in 1:div(OS.n,2)
-                OS.E[i] = F(moment(OS, i, pow=1))
+                OS.E[i] = F(Distributions.moment(OS, i, pow = 1))
             end
         end
 
@@ -89,7 +90,12 @@ StatsFuns.normpdf(x::acb) = (F = parent(x); 1/sqrt(2const_pi(F))*exp(-x^2/2))
 
 I(x, i, j) = normcdf(x)^i * normccdf(x)^j * normpdf(x)
 
-function moment(OS::NormOrderStatistic, i::Int; pow=1, radius=18.0)
+function Distributions.moment(
+    OS::NormOrderStatistic,
+    i::Int;
+    pow = 1,
+    radius = 18.0,
+)
     n = OS.n
     @assert 1<= i <= n
     C = OS.facs[n]/OS.facs[i-1]/OS.facs[n-i]
@@ -97,9 +103,8 @@ function moment(OS::NormOrderStatistic, i::Int; pow=1, radius=18.0)
     return real(C*Nemo.integrate(F, x -> x^pow * I(x, i-1, n-i), -radius, radius))
 end
 
-expectation(OS::NormOrderStatistic) = real.(OS.E)
-
-expectation(OS::NormOrderStatistic, i::Int) = OS[i]
+Distributions.expectation(OS::NormOrderStatistic) = real.(OS.E)
+Distributions.expectation(OS::NormOrderStatistic, i::Int) = OS[i]
 
 ###############################################################################
 #
@@ -180,13 +185,23 @@ function K(facs::Factorials, n::Integer, i::Integer, j::Integer)
     return facs[n]/facs[i-1]/facs[n-j]/facs[j-i-1]
 end
 
-function expectation(OS::NormOrderStatistic, i::Int, j::Int; radius=18.0)
+function Distributions.expectation(
+    OS::NormOrderStatistic,
+    i::Int,
+    j::Int;
+    radius = 18.0,
+)
     if i == j
-        return moment(OS, i, pow=2, radius=radius)
+        return Distributions.moment(OS, i, pow = 2, radius = radius)
     elseif i > j
-        return expectation(OS, j, i, radius=radius)
-    elseif i+j > OS.n+1
-        return expectation(OS, OS.n-j+1, OS.n-i+1, radius=radius)
+        return Distributions.expectation(OS, j, i, radius = radius)
+    elseif i + j > OS.n + 1
+        return Distributions.expectation(
+            OS,
+            OS.n - j + 1,
+            OS.n - i + 1,
+            radius = radius,
+        )
     else
         n = OS.n
         C = K(OS.facs, n, i, j)

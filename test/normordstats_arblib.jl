@@ -47,13 +47,13 @@ function test_sum_moments_arblib(OS; atol, R)
 
     @testset "Sums of products and moments: Arblib (n=$(OS.n))" begin
         for i = 1:OS.n-1
-            res = sum(expectation(OS, i, j, radius=R) for j = 1:OS.n)
+            res = sum(Distributions.expectation(OS, i, j, radius=R) for j = 1:OS.n)
             @info res
             @test Arblib.contains_zero(res - 1)
             @test res - 1 < atol
         end
 
-        res = sum(moment(OS, i, pow = 2, radius=R) for i = 1:OS.n)
+        res = sum(Distributions.moment(OS, i, pow = 2, radius=R) for i = 1:OS.n)
         @test Arblib.contains_zero(res - OS.n)
         @test res - OS.n < atol
     end

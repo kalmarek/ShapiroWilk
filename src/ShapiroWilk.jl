@@ -1,11 +1,9 @@
 module ShapiroWilk
 
+import LinearAlgebra: dot
 import Statistics
 
-export SWCoeffs, expectation, moment
-
-function expectation end
-function moment end
+export SWCoeffs, Wstatistic
 
 include("orderstatistics.jl")
 

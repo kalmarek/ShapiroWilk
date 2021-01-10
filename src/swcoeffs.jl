@@ -1,3 +1,4 @@
+import Distributions: expectation
 import StatsFuns: norminvcdf
 import Statistics: cov
 
