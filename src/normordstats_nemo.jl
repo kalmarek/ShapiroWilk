@@ -1,9 +1,9 @@
 module OrderStatisticsNemo
 
-using Statistics
-using StatsFuns
+import Statistics
 import Distributions
 
+import StatsFuns
 using Nemo
 
 import ..OrderStatistic
@@ -84,11 +84,13 @@ Nemo.base_ring(OS::NormOrderStatistic) = Nemo.AcbField(precision(OS))
 #
 ###############################################################################
 
-StatsFuns.normcdf(x::acb) = (F = parent(x); Nemo.erfc(-x/sqrt(F(2)))/2)
-StatsFuns.normccdf(x::acb) = 1 - normcdf(x)
-StatsFuns.normpdf(x::acb) = (F = parent(x); 1/sqrt(2const_pi(F))*exp(-x^2/2))
+StatsFuns.normcdf(x::acb) = (F = parent(x); Nemo.erfc(-x / sqrt(F(2))) / 2)
+StatsFuns.normccdf(x::acb) = 1 - StatsFuns.normcdf(x)
+StatsFuns.normpdf(x::acb) =
+    (F = parent(x); 1 / sqrt(2const_pi(F)) * exp(-x^2 / 2))
 
-I(x, i, j) = normcdf(x)^i * normccdf(x)^j * normpdf(x)
+I(x, i, j) =
+    StatsFuns.normcdf(x)^i * StatsFuns.normccdf(x)^j * StatsFuns.normpdf(x)
 
 function Distributions.moment(
     OS::NormOrderStatistic,
@@ -126,7 +128,12 @@ Distributions.expectation(OS::NormOrderStatistic, i::Int) = OS[i]
 ###############################################################################
 
 function α_int(i::Int, j::Int, r::acb)
-    res = Nemo.integrate(parent(r), x -> x * normcdf(x)^i * normccdf(x)^j, -r, r)
+    res = Nemo.integrate(
+        parent(r),
+        x -> x * StatsFuns.normcdf(x)^i * StatsFuns.normccdf(x)^j,
+        -r,
+        r,
+    )
     return res
 end
 
@@ -135,13 +142,16 @@ function β_int(i::Int, j::Int, r::acb)
     return res
 end
 
-function integrand(j::Int, x::acb, r::acb)
-    return Nemo.integrate(parent(r), y -> normcdf(y)^j, -r, -x)
-end
+_ψ_integrand(j::Int, x::acb, r::acb) =
+    Nemo.integrate(parent(r), y -> StatsFuns.normcdf(y)^j, -r, -x)
 
 function ψ_int(i::Int, j::Int, r::acb)
-    res = Nemo.integrate(parent(r),
-        x -> normcdf(x)^i * integrand(j, x, r), -r, r)
+    res = Nemo.integrate(
+        parent(r),
+        x -> StatsFuns.normcdf(x)^i * _ψ_integrand(j, x, r),
+        -r,
+        r,
+    )
     return res
 end
 
@@ -237,9 +247,9 @@ function Statistics.cov(OS::NormOrderStatistic)
     F = ArbField(precision(OS))
     V = matrix(F, zeros(OS.n, OS.n))
     for i = 1:OS.n
-        V[i, i] = F(cov(OS, i, i))
+        V[i, i] = F(Statistics.cov(OS, i, i))
         for j = i+1:OS.n
-            V[i, j] = F(cov(OS, i, j))
+            V[i, j] = F(Statistics.cov(OS, i, j))
             V[j, i] = V[i, j]
         end
     end
