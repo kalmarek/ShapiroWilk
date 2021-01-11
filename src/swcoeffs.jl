@@ -15,7 +15,7 @@ function Base.getindex(SWc::SWCoeffs, i::Int)
         return SWc.A[i]
     elseif i <= length(SWc)
         if isodd(SWc.N) && i == div(SWc.N, 2) + 1
-            return 0.0
+            return zero(first(SWc.A))
         else
             return -SWc.A[SWc.N+1-i]
         end
@@ -56,7 +56,7 @@ function SWCoeffs(N::Integer)
     end
 end
 
-function SWCoeffs(OS)
+function SWCoeffs(OS::OrderStatistic)
     m = expectation(OS)
     mΣ⁻¹ = m'*inv(cov(OS))
     A = mΣ⁻¹./sqrt(first(mΣ⁻¹*mΣ⁻¹'))
