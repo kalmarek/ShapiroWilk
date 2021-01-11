@@ -40,7 +40,7 @@ end
 
 function test_sum_moments_nemo(OS; atol, R)
 
-    @time OrderStatisticsNemo._precompute_ψ(OS.n, prec=precision(OS), R=R)
+    @time OrderStatisticsNemo._precompute(OS.n, prec=precision(OS), R=R)
 
     @testset "Sums of products and moments: Nemo (n = $(OS.n))" begin
         for i in 1:OS.n-1

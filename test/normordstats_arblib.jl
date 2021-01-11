@@ -43,7 +43,7 @@ end
 
 function test_sum_moments_arblib(OS; atol, R)
 
-    @time OrderStatisticsArblib._precompute_ψ(OS.n, prec=precision(OS), R=R)
+    @time OrderStatisticsArblib._precompute(OS.n, prec=precision(OS), R=R)
 
     @testset "Sums of products and moments: Arblib (n=$(OS.n))" begin
         for i = 1:OS.n-1

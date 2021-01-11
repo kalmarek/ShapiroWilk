@@ -405,11 +405,11 @@ end
 ################################################################################
 #   Precomputation routines
 
-ijs_ψ(n::Int) = [(i, j) for i = 2:div(n, 2) for j = i:n-i]
+_ijs(n::Int) = [(i, j) for i = 2:div(n, 2) for j = i:n-i]
 
-function _precompute_ψ(n; prec, R)
-    pairs = ijs_ψ(n)
-    tasks = [Threads.@spawn ψ(prec, i, j, R) for (i, j) in pairs]
+function _precompute(n; prec, R)
+    pairs = _ijs(n)
+    tasks = [Threads.@spawn γ(prec, i, j, R) for (i, j) in pairs]
     w = fetch.(tasks)
 
     return pairs, w

@@ -48,7 +48,7 @@ end
 
         OS = OrderStatisticsNemo.NormOrderStatistic(20, Nemo.AcbField(prec))
 
-        OrderStatisticsNemo._precompute_ψ(N, prec=prec, R=18.0)
+        OrderStatisticsNemo._precompute(N, prec=prec, R=18.0)
 
         sw = ShapiroWilk.SWCoeffs(OS)
 
@@ -64,7 +64,7 @@ end
     sw_20_arblib = let N = 20, prec = 96
         OS = OrderStatisticsArblib.NormOrderStatistic(N, prec = prec)
 
-        OrderStatisticsArblib._precompute_ψ(N, prec=prec, R=18.0)
+        OrderStatisticsArblib._precompute(N, prec=prec, R=18.0)
 
         sw = ShapiroWilk.SWCoeffs(OS)
 

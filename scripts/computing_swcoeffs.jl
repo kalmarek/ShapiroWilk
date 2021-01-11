@@ -8,7 +8,7 @@ import ShapiroWilk.OrderStatisticsArblib.NormOrderStatistic
 
 function precision_sum_moments(OS::NormOrderStatistic; R)
 
-    OrderStatisticsArblib._precompute_ψ(OS.n, prec=precision(OS), R=R)
+    OrderStatisticsArblib._precompute(OS.n, prec=precision(OS), R=R)
 
     expected_tol = maximum(1:OS.n-1) do i
         res = sum(Distributions.expectation(OS, i, j, radius=R) for j = 1:OS.n) - 1
