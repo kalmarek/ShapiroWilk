@@ -2,6 +2,11 @@ module ShapiroWilk
 
 import LinearAlgebra: dot
 import Statistics
+import Distributions
+
+using Arblib
+import Memoize: @memoize
+import LRUCache: LRU
 
 export SWCoeffs, Wstatistic
 
@@ -10,7 +15,6 @@ include("orderstatistics.jl")
 include("swcoeffs.jl")
 include("royston.jl")
 
-include("normordstats_nemo.jl")
 include("normordstats_arblib.jl")
 
 function Wstatistic(X, A::SWCoeffs)

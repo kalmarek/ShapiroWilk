@@ -1,14 +1,3 @@
-module OrderStatisticsArblib
-
-import Statistics
-import Distributions
-
-using Arblib
-import Memoize: @memoize
-import LRUCache: LRU
-
-import ..OrderStatistic
-
 Arblib.fac!(a::Arblib.ArbLike, n::Signed) = Arblib.fac!(a, UInt(n))
 
 struct Factorials <: AbstractVector{ArbRef}
@@ -36,10 +25,16 @@ struct NormOrderStatistic <: OrderStatistic{Arb}
     n::Int
     factorial::Factorials
     E::ArbVector
+    radius::Float64
 
-    function NormOrderStatistic(n::Int; prec)
+    function NormOrderStatistic(n::Int; prec, radius)
 
-        OS = new(n, Factorials(n, prec = prec), ArbVector(n, prec = prec))
+        OS = new(
+            n,
+            Factorials(n, prec = prec),
+            ArbVector(n, prec = prec),
+            radius,
+        )
         π_ = Arb(π, prec = prec)
         X = Arblib.rsqrt!(Arb(prec = prec), π_)
 
@@ -80,6 +75,7 @@ Base.IndexStyle(::Type{NormOrderStatistic}) = IndexLinear()
 Base.getindex(OS::NormOrderStatistic, i::Integer) where {T} = OS.E[i]
 
 Base.precision(OS::NormOrderStatistic) = precision(OS.E)
+integration_radius(OS::NormOrderStatistic) = OS.radius
 
 ###############################################################################
 #   Exact expected values and moments of normal order statistics
@@ -157,12 +153,8 @@ function I!(res::Arblib.AcbOrRef, x, i, j; tmp1 = zero(res), tmp2 = zero(res))
     return res
 end
 
-function Distributions.moment(
-    OS::NormOrderStatistic,
-    i::Integer;
-    pow = 1,
-    radius = Acb(18.0, prec = precision(OS)),
-)
+function Distributions.moment(OS::NormOrderStatistic, i::Integer; pow = 1)
+    radius = Acb(integration_radius(OS), prec = precision(OS))
     n = OS.n
     @assert 1 <= i <= n
     C = Arb(OS.factorial[n], prec = precision(OS))
@@ -344,20 +336,16 @@ end
 function Distributions.expectation(
     OS::NormOrderStatistic,
     i::Integer,
-    j::Integer;
-    radius = 18.0,
+    j::Integer,
 )
+    radius = integration_radius(OS)
+
     if i == j
-        return Distributions.moment(OS, i, pow = 2, radius = radius)
+        return Distributions.moment(OS, i, pow = 2)
     elseif i > j
-        return Distributions.expectation(OS, j, i, radius = radius)
+        return Distributions.expectation(OS, j, i)
     elseif i + j > OS.n + 1
-        return Distributions.expectation(
-            OS,
-            OS.n - j + 1,
-            OS.n - i + 1,
-            radius = radius,
-        )
+        return Distributions.expectation(OS, OS.n - j + 1, OS.n - i + 1)
     else
         n = OS.n
         res = Arb(prec = precision(OS))
@@ -407,12 +395,11 @@ end
 
 _ijs(n::Int) = [(i, j) for i = 2:div(n, 2) for j = i:n-i]
 
-function _precompute(n; prec, R)
+function _precompute(OS::NormOrderStatistic)
+    n, prec, R = OS.n, precision(OS), integration_radius(OS)
     pairs = _ijs(n)
     tasks = [Threads.@spawn γ(prec, i, j, R) for (i, j) in pairs]
     w = fetch.(tasks)
 
     return pairs, w
-end
-
 end

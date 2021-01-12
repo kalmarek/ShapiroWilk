@@ -1,6 +1,8 @@
-function test_α_ij(n, prec, atol, R)
+function test_α_ij(OS::ShapiroWilk.NormOrderStatistic; atol)
+    n, prec, R = OS.n, precision(OS), ShapiroWilk.integration_radius(OS)
+
     @testset "α_ij (n=$n, prec=$prec, atol=$atol, R=$R)" begin
-        α = OrderStatisticsArblib.α
+        α = ShapiroWilk.α
         for i = 1:n
             for j = 1:n
                 alpha_ij_residual =
@@ -12,10 +14,12 @@ function test_α_ij(n, prec, atol, R)
     end
 end
 
-function test_β_ii(n, prec, atol, R)
+function test_β_ii(OS::ShapiroWilk.NormOrderStatistic; atol)
+    n, prec, R = OS.n, precision(OS), ShapiroWilk.integration_radius(OS)
+
     @testset "β_ii (n=$n, prec=$prec, atol=$atol, R=$R)" begin
-        α = OrderStatisticsArblib.α
-        β = OrderStatisticsArblib.β
+        α = ShapiroWilk.α
+        β = ShapiroWilk.β
         for i = 1:n
             beta_ii_residual =
                 β(prec, i, i, R) -
@@ -26,9 +30,10 @@ function test_β_ii(n, prec, atol, R)
     end
 end
 
-function test_β_ij(n, prec, atol, R)
+function test_β_ij(OS::ShapiroWilk.NormOrderStatistic; atol)
+    n, prec, R = OS.n, precision(OS), ShapiroWilk.integration_radius(OS)
     @testset "β_ij (n=$n, prec=$prec, atol=$atol, R=$R)" begin
-        β = OrderStatisticsArblib.β
+        β = ShapiroWilk.β
         for i = 1:n
             for j = 1:n
                 beta_ij_residual =
@@ -41,32 +46,73 @@ function test_β_ij(n, prec, atol, R)
     end
 end
 
-function test_sum_moments_arblib(OS; atol, R)
-
-    @time OrderStatisticsArblib._precompute(OS.n, prec=precision(OS), R=R)
+function test_sum_moments_arblib(OS; atol)
+    @time ShapiroWilk._precompute(OS)
 
     @testset "Sums of products and moments: Arblib (n=$(OS.n))" begin
         for i = 1:OS.n-1
-            res = sum(Distributions.expectation(OS, i, j, radius=R) for j = 1:OS.n)
+            res = sum(Distributions.expectation(OS, i, j) for j = 1:OS.n)
             @info res
             @test Arblib.contains_zero(res - 1)
             @test res - 1 < atol
         end
 
-        res = sum(Distributions.moment(OS, i, pow = 2, radius=R) for i = 1:OS.n)
+        res = sum(Distributions.moment(OS, i, pow = 2) for i = 1:OS.n)
         @test Arblib.contains_zero(res - OS.n)
         @test res - OS.n < atol
     end
 end
 
-function numeric_tests_order_statistics_arblib(n::Integer; prec, atol, R)
+function numeric_tests_order_statistics_arblib(OS::ShapiroWilk.NormOrderStatistic; atol)
+    n, prec, R = OS.n, precision(OS), ShapiroWilk.integration_radius(OS)
+
     @testset "Relations between α, β and expectations/moments of OS using Arblib (n=$n)" begin
 
-        @time test_α_ij(n, prec, atol, R)
-        @time test_β_ii(n, prec, atol, R)
-        @time test_β_ij(n, prec, atol, R)
+        @time test_α_ij(OS, atol=atol)
+        @time test_β_ii(OS, atol=atol)
+        @time test_β_ij(OS, atol=atol)
 
-        OS = OrderStatisticsArblib.NormOrderStatistic(n, prec=prec)
-        @time test_sum_moments_arblib(OS, atol=atol, R=R)
+        @time test_sum_moments_arblib(OS, atol=atol)
     end
+end
+
+
+
+let
+    # import Memoize
+    # empty!(Memoize.memoize_cache(ShapiroWilk.α))
+    # empty!(Memoize.memoize_cache(ShapiroWilk.β))
+    # empty!(Memoize.memoize_cache(ShapiroWilk.ψ))
+    # empty!(Memoize.memoize_cache(ShapiroWilk._γ))
+
+    OS = ShapiroWilk.NormOrderStatistic(6, prec=69, radius=18.0)
+    numeric_tests_order_statistics_arblib(OS, atol=eps(Float64))
+
+    OS = ShapiroWilk.NormOrderStatistic(10, prec=96, radius=18.0)
+    test_sum_moments_arblib(OS, atol=2e-22)
+
+    OS = ShapiroWilk.NormOrderStatistic(20, prec=96, radius=18.0)
+    test_sum_moments_arblib(OS, atol=2e-16)
+end
+
+if false
+
+    # @time test_α_ij(50, 128, 4e-36, 18.0)
+    # @time test_β_ii(50, 128, 2e-37, 18.0)
+    # @time test_β_ij(50, 128, 5e-38, 18.0)
+
+    OS = ShapiroWilk.NormOrderStatistic(10, prec=128, radius=18.0)
+    test_sum_moments_arblib(OS, atol=3e-32)
+
+    OS = ShapiroWilk.NormOrderStatistic(20, prec=128, radius=18.0)
+    test_sum_moments_arblib(OS, atol=7e-27)
+
+    OS = ShapiroWilk.NormOrderStatistic(30, prec=128, radius=18.0)
+    test_sum_moments_arblib(OS, atol=2e-19)
+
+    OS = ShapiroWilk.NormOrderStatistic(40, prec=128, radius=18.0)
+    @time test_sum_moments_arblib(OS, atol=4e-12)
+
+    OS = ShapiroWilk.NormOrderStatistic(50, prec=128, radius=18.0)
+    @time test_sum_moments_arblib(OS, atol=6e-6)
 end
