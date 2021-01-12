@@ -3,23 +3,7 @@ using ShapiroWilk
 using Statistics
 using Distributions
 
-using Nemo
 using Arblib
-
-using ShapiroWilk.OrderStatisticsNemo
-
-include("normordstats_nemo.jl")
-let
-    CC = Nemo.AcbField(69)
-    numeric_tests_order_statistics_nemo(6, CC, atol=eps(Float64), R=18.0)
-
-    CC = Nemo.AcbField(96)
-    OS = OrderStatisticsNemo.NormOrderStatistic(10, CC)
-    @time test_sum_moments_nemo(OS, atol=8e-18, R=18.0)
-
-    OS = OrderStatisticsNemo.NormOrderStatistic(20, CC)
-    @time test_sum_moments_nemo(OS, atol=2e-16, R=18.0)
-end
 
 using ShapiroWilk.OrderStatisticsArblib
 include("normordstats_arblib.jl")
