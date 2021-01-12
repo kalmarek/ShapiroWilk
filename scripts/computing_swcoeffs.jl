@@ -31,11 +31,27 @@ results = Vector{Float64}[]
 R = 18.0
 
 isdir("log") || mkdir("log")
+files_computed = readdir("log")
 
-while n <= 60
-    # @info "computing SW coefficients for n=$n"
-    computed = false
-    swfl = Vector{Float64}(undef, n)
+while n <= 30
+    re = Regex("sw_coeffs_$(n)_(?<prec>\\d+)\\.jld")
+    if any(f -> match(re, f) !== nothing, files_computed)
+        @info "Found precomputed values for n=$n, skipping"
+        global n +=1
+        continue
+    else
+        @info "computing SW coefficients for n=$n"
+        re_prev = Regex("sw_coeffs_$(n-1)_(?<prec>\\d+)\\.jld")
+        for f in reverse(files_computed)
+            m = match(re_prev, f)
+            if m !== nothing
+                global prec = max(prec, parse(Int, m[:prec]))
+                break
+            end
+        end
+        computed = false
+        swfl = Vector{Float64}(undef, n)
+    end
 
     while !computed
         os = NormOrderStatistic(n, prec = prec)
