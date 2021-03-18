@@ -16,6 +16,8 @@ include("swcoeffs.jl")
 include("royston.jl")
 
 include("normordstats_arblib.jl")
+include("normalizing_transform_12:Inf.jl")
+
 _W_cdf_4_11 = let
     include("W_cdf_4:11.jl")
     Dict(n => CumulativeDistribution(vals[n-3, :], qs) for n in 4:11)
