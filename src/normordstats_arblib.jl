@@ -281,26 +281,26 @@ function ψ!(res::Arblib.AcbOrRef, i::Integer, j::Integer, r)
     return ψ_int!(res, i, j, r)
 end
 
-@memoize () -> LRU{Tuple{Int,Int,Int,Float64},Arb}(maxsize = 10000) α(
+@memoize () -> LRU{Tuple{Int,Int,Int,Float64},Arb}(maxsize = 100_000) α(
     prec::Int,
     i::Int,
     j::Int,
     r::Float64,
 ) = real(α!(Acb(prec = prec), i, j, r))
-@memoize () -> LRU{Tuple{Int,Int,Int,Float64},Arb}(maxsize = 10000) β(
+@memoize () -> LRU{Tuple{Int,Int,Int,Float64},Arb}(maxsize = 100_000) β(
     prec::Int,
     i::Int,
     j::Int,
     r::Float64,
 ) = real(β!(Acb(prec = prec), i, j, r))
-@memoize () -> LRU{Tuple{Int,Int,Int,Float64},Arb}(maxsize = 10000) ψ(
+@memoize () -> LRU{Tuple{Int,Int,Int,Float64},Arb}(maxsize = 100_000) ψ(
     prec::Int,
     i::Int,
     j::Int,
     r::Float64,
 ) = real(ψ!(Acb(prec = prec), i, j, r))
 
-@memoize () -> LRU{Tuple{Int,Int,Int,Float64},Arb}(maxsize = 10000) function _γ(
+@memoize () -> LRU{Tuple{Int,Int,Int,Float64},Arb}(maxsize = 100000) function _γ(
     prec::Int,
     i::Int,
     j::Int,
